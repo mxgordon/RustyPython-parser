@@ -1,0 +1,6 @@
+---
+source: parser/src/parser.rs
+assertion_line: 567
+expression: parse_ast
+---
+[]

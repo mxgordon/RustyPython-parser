@@ -9,19 +9,20 @@ license = { workspace = true }
 rust-version = { workspace = true }
 
 [features]
-default = ["location", "malachite-bigint"]
+default = ["location", "dep:malachite"]
 location = ["rustpython-ast/location", "rustpython-parser-core/location"]
 serde = ["dep:serde", "rustpython-parser-core/serde"]
 all-nodes-with-ranges = ["rustpython-ast/all-nodes-with-ranges"]
 full-lexer = []
-malachite-bigint = ["dep:malachite-bigint", "rustpython-ast/malachite-bigint"]
-num-bigint = ["dep:num-bigint", "rustpython-ast/num-bigint"]
+#malachite-bigint = ["dep:malachite-bigint", "rustpython-ast/malachite-bigint"]
+#num-bigint = ["dep:num-bigint", "rustpython-ast/num-bigint"]
 
 [build-dependencies]
 anyhow = { workspace = true }
 lalrpop = { version = "0.20.0", default-features = false, optional = true }
 phf_codegen = "0.11.1"
 tiny-keccak = { version = "2", features = ["sha3"] }
+malachite = "0.6.1"
 
 [dependencies]
 rustpython-ast = { workspace = true, default-features = false }
@@ -30,8 +31,8 @@ rustpython-parser-core = { workspace = true }
 itertools = { workspace = true }
 is-macro = { workspace = true }
 log = { workspace = true }
-malachite-bigint = { workspace = true, optional = true }
-num-bigint = { workspace = true, optional = true }
+malachite = { workspace = true, optional = true }
+#num-bigint = { workspace = true, optional = true }
 num-traits = { workspace = true }
 unicode_names2 = { workspace = true }
 

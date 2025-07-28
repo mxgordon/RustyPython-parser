@@ -1,5 +1,7 @@
 # RustPython parser as a library
 
+*Forked from [rustpython-parser](https://github.com/RustPython/Parser) to update deps (mainly malachite)*
+
 This project is forked from [RustPython][RustPython] project. The parser is one of the core part of [RustPython] and [Ruff] project.
 
 We try to keep these crates as a well-packaged library for more potential users.

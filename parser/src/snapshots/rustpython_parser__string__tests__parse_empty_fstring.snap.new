@@ -1,0 +1,6 @@
+---
+source: parser/src/string.rs
+assertion_line: 863
+expression: "parse_fstring(\"\").unwrap()"
+---
+[]

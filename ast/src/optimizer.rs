@@ -55,7 +55,7 @@ impl<U> crate::fold::Fold<U> for ConstantOptimizer {
 
 #[cfg(test)]
 mod tests {
-    use crate::bigint::BigInt;
+    use malachite::Integer;
     use rustpython_parser_core::text_size::TextRange;
 
     #[cfg(feature = "constant-optimization")]
@@ -68,13 +68,13 @@ mod tests {
             ctx: ExprContext::Load,
             elts: vec![
                 ExprConstant {
-                    value: BigInt::from(1).into(),
+                    value: Integer::from(1).into(),
                     kind: None,
                     range,
                 }
                 .into(),
                 ExprConstant {
-                    value: BigInt::from(2).into(),
+                    value: Integer::from(2).into(),
                     kind: None,
                     range,
                 }
@@ -83,19 +83,19 @@ mod tests {
                     ctx: ExprContext::Load,
                     elts: vec![
                         ExprConstant {
-                            value: BigInt::from(3).into(),
+                            value: Integer::from(3).into(),
                             kind: None,
                             range,
                         }
                         .into(),
                         ExprConstant {
-                            value: BigInt::from(4).into(),
+                            value: Integer::from(4).into(),
                             kind: None,
                             range,
                         }
                         .into(),
                         ExprConstant {
-                            value: BigInt::from(5).into(),
+                            value: Integer::from(5).into(),
                             kind: None,
                             range,
                         }
@@ -114,12 +114,12 @@ mod tests {
             new_ast,
             ExprConstant {
                 value: Constant::Tuple(vec![
-                    BigInt::from(1).into(),
-                    BigInt::from(2).into(),
+                    Integer::from(1).into(),
+                    Integer::from(2).into(),
                     Constant::Tuple(vec![
-                        BigInt::from(3).into(),
-                        BigInt::from(4).into(),
-                        BigInt::from(5).into(),
+                        Integer::from(3).into(),
+                        Integer::from(4).into(),
+                        Integer::from(5).into(),
                     ])
                 ]),
                 kind: None,

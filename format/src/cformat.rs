@@ -1,6 +1,5 @@
 //! Implementation of Printf-Style string formatting
 //! as per the [Python Docs](https://docs.python.org/3/library/stdtypes.html#printf-style-string-formatting).
-use crate::bigint::{BigInt, Sign};
 use bitflags::bitflags;
 use num_traits::Signed;
 use rustpython_literal::{float, format::Case};
@@ -9,6 +8,10 @@ use std::{
     iter::{Enumerate, Peekable},
     str::FromStr,
 };
+use std::cmp::Ordering;
+use malachite::base::num::arithmetic::traits::{Abs, Sign};
+use malachite::base::num::conversion::traits::ToStringBase;
+use malachite::Integer;
 
 #[derive(Debug, PartialEq)]
 pub enum CFormatErrorType {
@@ -277,7 +280,7 @@ impl CFormatSpec {
         }
     }
 
-    pub fn format_number(&self, num: &BigInt) -> String {
+    pub fn format_number(&self, num: &Integer) -> String {
         use CNumberType::*;
         let magnitude = num.abs();
         let prefix = if self.flags.contains(CConversionFlags::ALTERNATE_FORM) {
@@ -292,11 +295,11 @@ impl CFormatSpec {
         };
 
         let magnitude_string: String = match self.format_type {
-            CFormatType::Number(Decimal) => magnitude.to_str_radix(10),
-            CFormatType::Number(Octal) => magnitude.to_str_radix(8),
-            CFormatType::Number(Hex(Case::Lower)) => magnitude.to_str_radix(16),
+            CFormatType::Number(Decimal) => magnitude.to_string_base(10),
+            CFormatType::Number(Octal) => magnitude.to_string_base(8),
+            CFormatType::Number(Hex(Case::Lower)) => magnitude.to_string_base(16),
             CFormatType::Number(Hex(Case::Upper)) => {
-                let mut result = magnitude.to_str_radix(16);
+                let mut result = magnitude.to_string_base(16);
                 result.make_ascii_uppercase();
                 result
             }
@@ -304,7 +307,7 @@ impl CFormatSpec {
         };
 
         let sign_string = match num.sign() {
-            Sign::Minus => "-",
+            Ordering::Less => "-",
             _ => self.flags.sign_string(),
         };
 
@@ -759,14 +762,14 @@ mod tests {
             "%#10x"
                 .parse::<CFormatSpec>()
                 .unwrap()
-                .format_number(&BigInt::from(0x1337)),
+                .format_number(&Integer::from(0x1337)),
             "    0x1337".to_owned()
         );
         assert_eq!(
             "%-#10x"
                 .parse::<CFormatSpec>()
                 .unwrap()
-                .format_number(&BigInt::from(0x1337)),
+                .format_number(&Integer::from(0x1337)),
             "0x1337    ".to_owned()
         );
     }
@@ -843,7 +846,7 @@ mod tests {
         let parsed = "%  0   -+++###10d".parse::<CFormatSpec>();
         assert_eq!(parsed, expected);
         assert_eq!(
-            parsed.unwrap().format_number(&BigInt::from(12)),
+            parsed.unwrap().format_number(&Integer::from(12)),
             "+12       ".to_owned()
         );
     }
@@ -897,70 +900,70 @@ mod tests {
             "%5d"
                 .parse::<CFormatSpec>()
                 .unwrap()
-                .format_number(&BigInt::from(27)),
+                .format_number(&Integer::from(27)),
             "   27".to_owned()
         );
         assert_eq!(
             "%05d"
                 .parse::<CFormatSpec>()
                 .unwrap()
-                .format_number(&BigInt::from(27)),
+                .format_number(&Integer::from(27)),
             "00027".to_owned()
         );
         assert_eq!(
             "%.5d"
                 .parse::<CFormatSpec>()
                 .unwrap()
-                .format_number(&BigInt::from(27)),
+                .format_number(&Integer::from(27)),
             "00027".to_owned()
         );
         assert_eq!(
             "%+05d"
                 .parse::<CFormatSpec>()
                 .unwrap()
-                .format_number(&BigInt::from(27)),
+                .format_number(&Integer::from(27)),
             "+0027".to_owned()
         );
         assert_eq!(
             "%-d"
                 .parse::<CFormatSpec>()
                 .unwrap()
-                .format_number(&BigInt::from(-27)),
+                .format_number(&Integer::from(-27)),
             "-27".to_owned()
         );
         assert_eq!(
             "% d"
                 .parse::<CFormatSpec>()
                 .unwrap()
-                .format_number(&BigInt::from(27)),
+                .format_number(&Integer::from(27)),
             " 27".to_owned()
         );
         assert_eq!(
             "% d"
                 .parse::<CFormatSpec>()
                 .unwrap()
-                .format_number(&BigInt::from(-27)),
+                .format_number(&Integer::from(-27)),
             "-27".to_owned()
         );
         assert_eq!(
             "%08x"
                 .parse::<CFormatSpec>()
                 .unwrap()
-                .format_number(&BigInt::from(0x1337)),
+                .format_number(&Integer::from(0x1337)),
             "00001337".to_owned()
         );
         assert_eq!(
             "%#010x"
                 .parse::<CFormatSpec>()
                 .unwrap()
-                .format_number(&BigInt::from(0x1337)),
+                .format_number(&Integer::from(0x1337)),
             "0x00001337".to_owned()
         );
         assert_eq!(
             "%-#010x"
                 .parse::<CFormatSpec>()
                 .unwrap()
-                .format_number(&BigInt::from(0x1337)),
+                .format_number(&Integer::from(0x1337)),
             "0x1337    ".to_owned()
         );
     }

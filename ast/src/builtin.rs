@@ -1,6 +1,6 @@
 //! `builtin_types` in asdl.py and Attributed
 
-use crate::bigint::BigInt;
+use malachite::Integer;
 
 pub type String = std::string::String;
 
@@ -119,7 +119,7 @@ pub enum Constant {
     Bool(bool),
     Str(String),
     Bytes(Vec<u8>),
-    Int(BigInt),
+    Int(Integer),
     Tuple(Vec<Constant>),
     Float(f64),
     Complex { real: f64, imag: f64 },
@@ -156,8 +156,8 @@ impl From<bool> for Constant {
         Self::Bool(b)
     }
 }
-impl From<BigInt> for Constant {
-    fn from(i: BigInt) -> Constant {
+impl From<Integer> for Constant {
+    fn from(i: Integer) -> Constant {
         Self::Int(i)
     }
 }

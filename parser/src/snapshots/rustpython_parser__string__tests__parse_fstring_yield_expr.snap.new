@@ -1,0 +1,20 @@
+---
+source: parser/src/string.rs
+assertion_line: 960
+expression: parse_ast
+---
+[
+    FormattedValue(
+        ExprFormattedValue {
+            range: 0..10,
+            value: Yield(
+                ExprYield {
+                    range: 3..8,
+                    value: None,
+                },
+            ),
+            conversion: None,
+            format_spec: None,
+        },
+    ),
+]

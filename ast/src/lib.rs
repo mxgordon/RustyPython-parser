@@ -22,10 +22,10 @@ mod ranged;
 #[cfg(feature = "unparse")]
 pub mod unparse;
 
-#[cfg(feature = "malachite-bigint")]
-pub use malachite_bigint as bigint;
-#[cfg(feature = "num-bigint")]
-pub use num_bigint as bigint;
+// #[cfg(feature = "malachite")]
+// pub use malachite_bigint as bigint;
+// #[cfg(feature = "num-bigint")]
+// pub use num_bigint as bigint;
 
 pub use builtin::*;
 pub use generic::*;

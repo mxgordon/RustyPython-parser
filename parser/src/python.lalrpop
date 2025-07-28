@@ -4,14 +4,15 @@
 // See also: https://greentreesnakes.readthedocs.io/en/latest/nodes.html#keyword
 
 use crate::{
-    ast::{self as ast, Ranged, bigint::BigInt},
+    ast::{self as ast, Ranged},
     lexer::{LexicalError, LexicalErrorType},
     function::{ArgumentList, parse_args, validate_pos_params, validate_arguments},
     context::set_context,
     string::parse_strings,
     token::{self, StringKind},
-    text_size::TextSize, parser::optional_range
+    text_size::TextSize, parser::optional_range,
 };
+use malachite::Integer;
 
 grammar;
 
@@ -1780,7 +1781,7 @@ extern {
         "True" => token::Tok::True,
         "False" => token::Tok::False,
         "None" => token::Tok::None,
-        int => token::Tok::Int { value: <BigInt> },
+        int => token::Tok::Int { value: <Integer> },
         float => token::Tok::Float { value: <f64> },
         complex => token::Tok::Complex { real: <f64>, imag: <f64> },
         string => token::Tok::String {

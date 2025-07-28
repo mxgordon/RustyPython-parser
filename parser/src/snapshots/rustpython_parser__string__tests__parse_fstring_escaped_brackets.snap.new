@@ -1,0 +1,16 @@
+---
+source: parser/src/string.rs
+assertion_line: 967
+expression: parse_ast
+---
+[
+    Constant(
+        ExprConstant {
+            range: 0..10,
+            value: Str(
+                "\\{x\\}",
+            ),
+            kind: None,
+        },
+    ),
+]

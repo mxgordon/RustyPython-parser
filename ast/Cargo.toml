@@ -9,7 +9,7 @@ license = { workspace = true }
 rust-version = { workspace = true }
 
 [features]
-default = ["location", "malachite-bigint"]
+default = ["location", "dep:malachite"]
 constant-optimization = ["fold"]
 location = ["fold", "rustpython-parser-core/location"]
 fold = []
@@ -22,6 +22,8 @@ rustpython-parser-core = { workspace = true }
 rustpython-literal = { workspace = true, optional = true }
 
 is-macro = { workspace = true }
-num-bigint = { workspace = true, optional = true }
-malachite-bigint = { workspace = true, optional = true }
+
+malachite = { workspace = true, optional = true }
+#num-bigint = { workspace = true, optional = true }
+#malachite-bigint = { workspace = true, optional = true }
 static_assertions = "1.1.0"

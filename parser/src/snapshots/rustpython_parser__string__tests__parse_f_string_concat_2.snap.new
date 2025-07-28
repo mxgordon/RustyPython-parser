@@ -1,0 +1,28 @@
+---
+source: parser/src/string.rs
+assertion_line: 1002
+expression: parse_ast
+---
+[
+    Expr(
+        StmtExpr {
+            range: 0..17,
+            value: JoinedStr(
+                ExprJoinedStr {
+                    range: 0..17,
+                    values: [
+                        Constant(
+                            ExprConstant {
+                                range: 0..17,
+                                value: Str(
+                                    "Hello world",
+                                ),
+                                kind: None,
+                            },
+                        ),
+                    ],
+                },
+            ),
+        },
+    ),
+]

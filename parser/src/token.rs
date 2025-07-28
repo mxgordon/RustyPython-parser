@@ -4,9 +4,9 @@
 //! loosely based on the token definitions found in the [CPython source].
 //!
 //! [CPython source]: https://github.com/python/cpython/blob/dfc2e065a2e71011017077e549cd2f9bf4944c54/Include/internal/pycore_token.h
-use crate::ast::bigint::BigInt;
 use crate::{text_size::TextSize, Mode};
 use std::fmt;
+use malachite::Integer;
 
 /// The set of tokens the Python source code can be tokenized in.
 #[derive(Clone, Debug, PartialEq, is_macro::Is)]
@@ -19,7 +19,7 @@ pub enum Tok {
     /// Token value for an integer.
     Int {
         /// The integer value.
-        value: BigInt,
+        value: Integer,
     },
     /// Token value for a floating point number.
     Float {

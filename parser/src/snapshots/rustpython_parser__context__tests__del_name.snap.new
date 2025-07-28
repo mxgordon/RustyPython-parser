@@ -1,0 +1,23 @@
+---
+source: parser/src/context.rs
+assertion_line: 167
+expression: parse_ast
+---
+[
+    Delete(
+        StmtDelete {
+            range: 0..5,
+            targets: [
+                Name(
+                    ExprName {
+                        range: 4..5,
+                        id: Identifier(
+                            "x",
+                        ),
+                        ctx: Del,
+                    },
+                ),
+            ],
+        },
+    ),
+]

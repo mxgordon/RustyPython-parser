@@ -1,4 +1,3 @@
-use crate::bigint::{BigInt, Sign};
 use itertools::{Itertools, PeekingNext};
 use num_traits::FromPrimitive;
 use num_traits::{cast::ToPrimitive, Signed};
@@ -6,6 +5,11 @@ use rustpython_literal::float;
 use rustpython_literal::format::Case;
 use std::ops::Deref;
 use std::{cmp, str::FromStr};
+use std::cmp::Ordering;
+use malachite::base::num::arithmetic::traits::{Abs, Sign};
+use malachite::base::num::conversion::traits::{OverflowingFrom, RoundingFrom, ToStringBase};
+use malachite::base::rounding_modes::RoundingMode;
+use malachite::Integer;
 
 trait FormatParse {
     fn parse(text: &str) -> (Option<Self>, &str)
@@ -429,7 +433,7 @@ impl FormatSpec {
                 | FormatType::Hex(_)
                 | FormatType::GeneralFormat(_)
                 | FormatType::Character,
-            ) => self.format_int(&BigInt::from_u8(x).unwrap()),
+            ) => self.format_int(&Integer::from(x)),
             Some(FormatType::Exponent(_) | FormatType::FixedPoint(_) | FormatType::Percentage) => {
                 self.format_float(x as f64)
             }
@@ -517,14 +521,14 @@ impl FormatSpec {
     }
 
     #[inline]
-    fn format_int_radix(&self, magnitude: BigInt, radix: u32) -> Result<String, FormatSpecError> {
+    fn format_int_radix(&self, magnitude: Integer, radix: u8) -> Result<String, FormatSpecError> {
         match self.precision {
             Some(_) => Err(FormatSpecError::PrecisionNotAllowed),
-            None => Ok(magnitude.to_str_radix(radix)),
+            None => Ok(magnitude.to_string_base(radix)),
         }
     }
 
-    pub fn format_int(&self, num: &BigInt) -> Result<String, FormatSpecError> {
+    pub fn format_int(&self, num: &Integer) -> Result<String, FormatSpecError> {
         self.validate_format(FormatType::Decimal)?;
         let magnitude = num.abs();
         let prefix = if self.alternate_form {
@@ -546,7 +550,7 @@ impl FormatSpec {
             Some(FormatType::Hex(Case::Upper)) => match self.precision {
                 Some(_) => Err(FormatSpecError::PrecisionNotAllowed),
                 None => {
-                    let mut result = magnitude.to_str_radix(16);
+                    let mut result = magnitude.to_string_base(16);
                     result.make_ascii_uppercase();
                     Ok(result)
                 }
@@ -559,23 +563,20 @@ impl FormatSpec {
             Some(FormatType::Character) => match (self.sign, self.alternate_form) {
                 (Some(_), _) => Err(FormatSpecError::NotAllowed("Sign")),
                 (_, true) => Err(FormatSpecError::NotAllowed("Alternate form (#)")),
-                (_, _) => match num.to_u32() {
-                    Some(n) if n <= 0x10ffff => Ok(std::char::from_u32(n).unwrap().to_string()),
-                    Some(_) | None => Err(FormatSpecError::CodeNotInRange),
+                (_, _) => match u32::overflowing_from(num) {
+                    (n, false) if n <= 0x10ffff => Ok(std::char::from_u32(n).unwrap().to_string()),
+                    (_n, _) => Err(FormatSpecError::CodeNotInRange),
                 },
             },
             Some(FormatType::GeneralFormat(_))
             | Some(FormatType::FixedPoint(_))
             | Some(FormatType::Exponent(_))
-            | Some(FormatType::Percentage) => match num.to_f64() {
-                Some(float) => return self.format_float(float),
-                _ => Err(FormatSpecError::UnableToConvert),
-            },
+            | Some(FormatType::Percentage) => self.format_float(f64::rounding_from(num, RoundingMode::Nearest).0),
             None => self.format_int_radix(magnitude, 10),
         }?;
         let format_sign = self.sign.unwrap_or(FormatSign::Minus);
         let sign_str = match num.sign() {
-            Sign::Minus => "-",
+            Ordering::Less => "-",
             _ => match format_sign {
                 FormatSign::Plus => "+",
                 FormatSign::Minus => "",
@@ -996,6 +997,8 @@ impl<'a> FromTemplate<'a> for FormatString {
 
 #[cfg(test)]
 mod tests {
+    use malachite::{Integer, Natural};
+    use malachite::base::num::conversion::traits::PowerOf2Digits;
     use super::*;
 
     #[test]
@@ -1111,43 +1114,43 @@ mod tests {
         assert_eq!(
             FormatSpec::parse("d")
                 .unwrap()
-                .format_int(&BigInt::from_bytes_be(Sign::Plus, b"\x10")),
+                .format_int(&Integer::from_sign_and_abs(true, Natural::from_power_of_2_digits_asc(8, b"\x10".iter().cloned()).unwrap())),
             Ok("16".to_owned())
         );
         assert_eq!(
             FormatSpec::parse("x")
                 .unwrap()
-                .format_int(&BigInt::from_bytes_be(Sign::Plus, b"\x10")),
+                .format_int(&Integer::from_sign_and_abs(true, Natural::from_power_of_2_digits_asc(8, b"\x10".iter().cloned()).unwrap())),
             Ok("10".to_owned())
         );
         assert_eq!(
             FormatSpec::parse("b")
                 .unwrap()
-                .format_int(&BigInt::from_bytes_be(Sign::Plus, b"\x10")),
+                .format_int(&Integer::from_sign_and_abs(true, Natural::from_power_of_2_digits_asc(8, b"\x10".iter().cloned()).unwrap())),
             Ok("10000".to_owned())
         );
         assert_eq!(
             FormatSpec::parse("o")
                 .unwrap()
-                .format_int(&BigInt::from_bytes_be(Sign::Plus, b"\x10")),
+                .format_int(&Integer::from_sign_and_abs(true, Natural::from_power_of_2_digits_asc(8, b"\x10".iter().cloned()).unwrap())),
             Ok("20".to_owned())
         );
         assert_eq!(
             FormatSpec::parse("+d")
                 .unwrap()
-                .format_int(&BigInt::from_bytes_be(Sign::Plus, b"\x10")),
+                .format_int(&Integer::from_sign_and_abs(true, Natural::from_power_of_2_digits_asc(8, b"\x10".iter().cloned()).unwrap())),
             Ok("+16".to_owned())
         );
         assert_eq!(
             FormatSpec::parse("^ 5d")
                 .unwrap()
-                .format_int(&BigInt::from_bytes_be(Sign::Minus, b"\x10")),
+                .format_int(&Integer::from_sign_and_abs(false, Natural::from_power_of_2_digits_asc(8, b"\x10".iter().cloned()).unwrap())),
             Ok(" -16 ".to_owned())
         );
         assert_eq!(
             FormatSpec::parse("0>+#10x")
                 .unwrap()
-                .format_int(&BigInt::from_bytes_be(Sign::Plus, b"\x10")),
+                .format_int(&Integer::from_sign_and_abs(true, Natural::from_power_of_2_digits_asc(8, b"\x10".iter().cloned()).unwrap())),
             Ok("00000+0x10".to_owned())
         );
     }
@@ -1157,7 +1160,7 @@ mod tests {
         let spec = FormatSpec::parse(",").expect("");
         assert_eq!(spec.grouping_option, Some(FormatGrouping::Comma));
         assert_eq!(
-            spec.format_int(&BigInt::from_str("1234567890123456789012345678").unwrap()),
+            spec.format_int(&Integer::from_str("1234567890123456789012345678").unwrap()),
             Ok("1,234,567,890,123,456,789,012,345,678".to_owned())
         );
     }

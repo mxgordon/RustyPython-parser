@@ -28,7 +28,6 @@
 //!
 //! [Lexical analysis]: https://docs.python.org/3/reference/lexical_analysis.html
 use crate::{
-    ast::bigint::BigInt,
     soft_keywords::SoftKeywordTransformer,
     string::FStringErrorType,
     text_size::{TextLen, TextRange, TextSize},
@@ -38,6 +37,8 @@ use crate::{
 use log::trace;
 use num_traits::{Num, Zero};
 use std::{char, cmp::Ordering, ops::Index, slice::SliceIndex, str::FromStr};
+use malachite::base::num::conversion::traits::FromStringBase;
+use malachite::Integer;
 use unic_emoji_char::is_emoji_presentation;
 use unic_ucd_ident::{is_xid_continue, is_xid_start};
 
@@ -303,11 +304,11 @@ where
     }
 
     /// Lex a hex/octal/decimal/binary number without a decimal point.
-    fn lex_number_radix(&mut self, start_pos: TextSize, radix: u32) -> LexResult {
-        let value_text = self.radix_run(radix);
+    fn lex_number_radix(&mut self, start_pos: TextSize, radix: u8) -> LexResult {
+        let value_text = self.radix_run(radix as u32);
         let end_pos = self.get_pos();
-        let value = BigInt::from_str_radix(&value_text, radix).map_err(|e| LexicalError {
-            error: LexicalErrorType::OtherError(format!("{e:?}")),
+        let value = Integer::from_string_base(radix, &value_text).ok_or_else(|| LexicalError {
+            error: LexicalErrorType::OtherError(format!("From string failed for {value_text}")),
             location: start_pos,
         })?;
         Ok((Tok::Int { value }, TextRange::new(start_pos, end_pos)))
@@ -389,8 +390,8 @@ where
                 ))
             } else {
                 let end_pos = self.get_pos();
-                let value = value_text.parse::<BigInt>().unwrap();
-                if start_is_zero && !value.is_zero() {
+                let value = value_text.parse::<Integer>().unwrap();
+                if start_is_zero && value != 0 {
                     // leading zeros in decimal integer literals are not permitted
                     return Err(LexicalError {
                         error: LexicalErrorType::OtherError("Invalid Token".to_owned()),
@@ -1370,7 +1371,6 @@ impl std::fmt::Display for LexicalErrorType {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ast::bigint::BigInt;
 
     const WINDOWS_EOL: &str = "\r\n";
     const MAC_EOL: &str = "\r";
@@ -1405,22 +1405,22 @@ mod tests {
             tokens,
             vec![
                 Tok::Int {
-                    value: BigInt::from(47),
+                    value: Integer::from(47),
                 },
                 Tok::Int {
-                    value: BigInt::from(10)
+                    value: Integer::from(10)
                 },
                 Tok::Int {
-                    value: BigInt::from(13),
+                    value: Integer::from(13),
                 },
                 Tok::Int {
-                    value: BigInt::from(0),
+                    value: Integer::from(0),
                 },
                 Tok::Int {
-                    value: BigInt::from(123),
+                    value: Integer::from(123),
                 },
                 Tok::Int {
-                    value: BigInt::from(1234567890),
+                    value: Integer::from(1234567890),
                 },
                 Tok::Float { value: 0.2 },
                 Tok::Float { value: 100.0 },
@@ -1446,7 +1446,7 @@ mod tests {
             fn $name() {
                 let source = format!(r"99232  # {}", $eol);
                 let tokens = lex_source(&source);
-                assert_eq!(tokens, vec![Tok::Int { value: BigInt::from(99232) }, Tok::Comment(format!("# {}", $eol)), Tok::Newline]);
+                assert_eq!(tokens, vec![Tok::Int { value: Integer::from(99232) }, Tok::Comment(format!("# {}", $eol)), Tok::Newline]);
             }
             )*
         }
@@ -1470,10 +1470,10 @@ mod tests {
                 assert_eq!(
                     tokens,
                     vec![
-                        Tok::Int { value: BigInt::from(123) },
+                        Tok::Int { value: Integer::from(123) },
                         Tok::Comment("# Foo".to_string()),
                         Tok::Newline,
-                        Tok::Int { value: BigInt::from(456) },
+                        Tok::Int { value: Integer::from(456) },
                         Tok::Newline,
                     ]
                 )
@@ -1500,15 +1500,15 @@ mod tests {
                 },
                 Tok::Equal,
                 Tok::Int {
-                    value: BigInt::from(99)
+                    value: Integer::from(99)
                 },
                 Tok::Plus,
                 Tok::Int {
-                    value: BigInt::from(2)
+                    value: Integer::from(2)
                 },
                 Tok::Minus,
                 Tok::Int {
-                    value: BigInt::from(0)
+                    value: Integer::from(0)
                 },
                 Tok::Newline,
             ]
@@ -1536,7 +1536,7 @@ mod tests {
                         Tok::Newline,
                         Tok::Indent,
                         Tok::Return,
-                        Tok::Int { value: BigInt::from(99) },
+                        Tok::Int { value: Integer::from(99) },
                         Tok::Newline,
                         Tok::NonLogicalNewline,
                         Tok::Dedent,
@@ -1582,7 +1582,7 @@ mod tests {
                         Tok::NonLogicalNewline,
                         Tok::Indent,
                         Tok::Return,
-                        Tok::Int { value: BigInt::from(99) },
+                        Tok::Int { value: Integer::from(99) },
                         Tok::Newline,
                         Tok::NonLogicalNewline,
                         Tok::Dedent,
@@ -1623,7 +1623,7 @@ mod tests {
                         Tok::NonLogicalNewline,
                         Tok::Indent,
                         Tok::Return,
-                        Tok::Int { value: BigInt::from(99) },
+                        Tok::Int { value: Integer::from(99) },
                         Tok::Newline,
                         Tok::NonLogicalNewline,
                         Tok::Dedent,
@@ -1674,29 +1674,29 @@ mod tests {
                         Tok::Lsqb,
                         Tok::NonLogicalNewline,
                         Tok::NonLogicalNewline,
-                        Tok::Int { value: BigInt::from(1) },
+                        Tok::Int { value: Integer::from(1) },
                         Tok::Comma,
-                        Tok::Int { value: BigInt::from(2) },
+                        Tok::Int { value: Integer::from(2) },
                         Tok::NonLogicalNewline,
                         Tok::Comma,
                         Tok::Lpar,
-                        Tok::Int { value: BigInt::from(3) },
+                        Tok::Int { value: Integer::from(3) },
                         Tok::Comma,
                         Tok::NonLogicalNewline,
-                        Tok::Int { value: BigInt::from(4) },
+                        Tok::Int { value: Integer::from(4) },
                         Tok::Comma,
                         Tok::NonLogicalNewline,
                         Tok::Rpar,
                         Tok::Comma,
                         Tok::Lbrace,
                         Tok::NonLogicalNewline,
-                        Tok::Int { value: BigInt::from(5) },
+                        Tok::Int { value: Integer::from(5) },
                         Tok::Comma,
                         Tok::NonLogicalNewline,
-                        Tok::Int { value: BigInt::from(6) },
+                        Tok::Int { value: Integer::from(6) },
                         Tok::Comma,
                         // Continuation here - no NonLogicalNewline.
-                        Tok::Int { value: BigInt::from(7) },
+                        Tok::Int { value: Integer::from(7) },
                         Tok::Rbrace,
                         Tok::Rsqb,
                         Tok::Newline,

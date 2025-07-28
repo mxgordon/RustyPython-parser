@@ -557,6 +557,7 @@ include!("gen/parse.rs");
 
 #[cfg(test)]
 mod tests {
+    use malachite::base::num::conversion::traits::SaturatingFrom;
     use super::*;
     use crate::{ast, Parse};
 
@@ -1229,7 +1230,7 @@ def args_to_tuple(*args: *Ts) -> Tuple[*Ts]: ...
         assert_eq!(c.str().unwrap(), "string");
 
         let c = ast::Constant::parse_without_path("10").unwrap();
-        assert_eq!(c.int().unwrap().to_i32().unwrap(), 10);
+        assert_eq!(i32::saturating_from(&c.int().unwrap()), 10);
     }
 
     #[test]
